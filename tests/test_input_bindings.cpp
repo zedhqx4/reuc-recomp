@@ -1,5 +1,6 @@
 #include "check.h"
 #include "input_bindings.h"
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -296,7 +297,11 @@ static void pad_tables_validate_and_stay_separate() {
     CHECK(defaults[size_t(Action::interact)][0].input==pad(0) && defaults[size_t(Action::reload)][0].input==pad(2));
     CHECK(defaults[size_t(Action::weapon_previous)][0].input==pad(11) && defaults[size_t(Action::weapon_next)][0].input==pad(12));   // the D-pad, up and down, on every platform
     CHECK(defaults[size_t(Action::reload)].size()==2 && defaults[size_t(Action::reload)][1].input==axis(9));                           // X, and the left trigger (L2)
+#ifdef _WIN32
     CHECK(defaults[size_t(Action::recenter)][0].input==pad(7) && defaults[size_t(Action::screenshot)][0].input==pad(4));
+#else
+    CHECK(defaults[size_t(Action::recenter)][0].input==pad(17) && defaults[size_t(Action::screenshot)].empty());   // the Steam Deck reserves View for its settings menu
+#endif
     CHECK(defaults[size_t(Action::release_cursor)].empty() && defaults[size_t(Action::camera_up)].empty());
     CHECK(defaults[size_t(Action::menu)].empty());   // the menu is a key of the keyboard table
     auto menu_table=default_bindings();
@@ -316,8 +321,11 @@ static void pad_tables_validate_and_stay_separate() {
 static void merge_appends_pad_entries_without_duplicates() {
     const auto merged=merge_bindings(default_bindings(),default_pad_bindings());
     const auto keyboard=default_bindings();
-    CHECK(merged[size_t(Action::interact)].size()==keyboard[size_t(Action::interact)].size()+1);
-    CHECK(merged[size_t(Action::interact)].front()==keyboard[size_t(Action::interact)].front() && merged[size_t(Action::interact)].back().input==pad(0));
+    const auto pad_interact=default_pad_bindings()[size_t(Action::interact)];
+    CHECK(merged[size_t(Action::interact)].size()==keyboard[size_t(Action::interact)].size()+pad_interact.size());
+    CHECK(merged[size_t(Action::interact)].front()==keyboard[size_t(Action::interact)].front());
+    for(const auto& binding:pad_interact)
+        CHECK(std::find(merged[size_t(Action::interact)].begin(),merged[size_t(Action::interact)].end(),binding)!=merged[size_t(Action::interact)].end());
     size_t specials=0; for(const auto& b:merged[size_t(Action::grenade)]) specials+=b.kind==BindingKind::interact_fire; CHECK(specials==1);   // the pad table has none: the keyboard's entry serves every device
     auto both=default_pad_bindings(); both[size_t(Action::grenade)].push_back({BindingKind::interact_fire,{},{}}); CHECK(!validate_pad_bindings(both));
     const auto twice=merge_bindings(keyboard,both);
@@ -335,13 +343,19 @@ static void pad_buttons_drive_actions_by_context() {
     r.button(pad(11),true); CHECK(downs(r.consume(),Action::weapon_previous)==1);   // the D-pad, up
     r.button(pad(12),true); CHECK(downs(r.consume(),Action::weapon_next)==1);       // and down
     r.button(pad(6),true); CHECK(downs(r.consume(),Action::pause)==1);
+#ifdef _WIN32
     r.button(pad(4),true); CHECK(downs(r.consume(),Action::screenshot)==1);
-    r.button(pad(7),true); CHECK(downs(r.consume(),Action::recenter)==1);
+    const auto recenter_button=pad(7);
+#else
+    CHECK(default_pad_bindings()[size_t(Action::screenshot)].empty());
+    const auto recenter_button=pad(17);
+#endif
+    r.button(recenter_button,true); CHECK(downs(r.consume(),Action::recenter)==1);
     r.button(pad(0),true); f=r.consume(); CHECK(f.held&bit(Action::interact));
     auto menu=pad_game(InputContext::menu); menu.button(pad(0),true); CHECK(menu.consume().pressed==bit(Action::confirm));
     menu.button(pad(1),true); CHECK(menu.consume().pressed==bit(Action::back));
-    menu.button(pad(7),true); CHECK(menu.consume().pressed==0);   // recenter is a gameplay action
-    auto qte=pad_game(InputContext::qte); qte.button(pad(7),true); CHECK(qte.consume().pressed==0);
+    menu.button(recenter_button,true); CHECK(menu.consume().pressed==0);   // recenter is a gameplay action
+    auto qte=pad_game(InputContext::qte); qte.button(recenter_button,true); CHECK(qte.consume().pressed==0);
     qte.qte_window(true); qte.button(pad(8),true); CHECK(downs(qte.consume(),Action::qte_shake)==1);   // R3 shakes inside a QTE window
 }
 static void pad_chord_and_cancel() {

@@ -1,0 +1,85 @@
+name: Wii Remote wave regression
+
+on:
+  push:
+    branches:
+      - feature/wiimote-wave-reload
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wiimote-wave-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted-tests:
+    name: Compile and run Wii Remote/input tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install the header-only JSON dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes nlohmann-json3-dev
+
+      - name: Compile targeted regression tests
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p build-ci
+          CXX="${CXX:-g++}"
+          COMMON=(-std=c++20 -O2 -Wall -Wextra -pthread -Icommon -Igame -Itests)
+
+          "$CXX" "${COMMON[@]}" \
+            tests/test_input_bindings.cpp common/input_bindings.cpp \
+            -o build-ci/test_input_bindings
+
+          "$CXX" "${COMMON[@]}" \
+            tests/test_wiimote_protocol.cpp common/wiimote_protocol.cpp \
+            -o build-ci/test_wiimote_protocol
+
+          "$CXX" "${COMMON[@]}" \
+            tests/test_wiimote_math.cpp common/wiimote_math.cpp common/wiimote_protocol.cpp \
+            -o build-ci/test_wiimote_math
+
+          # The fake transport keeps this test hardware-independent. These two stubs satisfy the
+          # platform opener symbols; no Bluetooth or /dev/input device is opened in CI.
+          cat > build-ci/wiimote_transport_stub.cpp <<'CPP'
+          #include "wiimote_transport.h"
+          namespace uc {
+          std::unique_ptr<WiiTransport> wii_open_first(std::string&) { return {}; }
+          std::unique_ptr<WiiTransport> wii_open_unclaimed(std::set<std::string>&, std::string&) { return {}; }
+          }
+          CPP
+
+          "$CXX" "${COMMON[@]}" \
+            tests/test_wiimote_input.cpp game/wiimote_input.cpp \
+            common/wiimote_protocol.cpp common/wiimote_math.cpp common/input_bindings.cpp \
+            build-ci/wiimote_transport_stub.cpp \
+            -o build-ci/test_wiimote_input
+
+      - name: Run targeted regression tests
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ./build-ci/test_input_bindings
+          ./build-ci/test_wiimote_protocol
+          ./build-ci/test_wiimote_math
+          ./build-ci/test_wiimote_input
+
+      - name: Preserve test binaries for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wiimote-wave-regression-tests
+          path: build-ci/test_*
+          if-no-files-found: ignore
+          retention-days: 3
