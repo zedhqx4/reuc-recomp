@@ -86,6 +86,20 @@ static void a_swing_arrives_as_motion() {
     CHECK(rig.until([&]{ return !rig.calls.motions.empty(); }));
     CHECK(rig.calls.motions.back()[0]>100);
 }
+static void a_wii_wave_produces_both_accelerometer_strokes() {
+    Rig rig;
+    CHECK(wait_for([&]{ return rig.connected(); }));
+    // The remote sits at rest first, then accelerates right and reverses left.
+    for(int i=0;i<30;++i) rig.remote->push(report(0,0));
+    rig.remote->push(report(0,0,{uint8_t(0x82+100),0x82,0x9C}));
+    CHECK(rig.until([&]{
+        return std::any_of(rig.calls.motions.begin(),rig.calls.motions.end(),[](const auto& motion){return motion[0]>100;});
+    }));
+    rig.remote->push(report(0,0,{uint8_t(0x82-100),0x82,0x9C}));
+    CHECK(rig.until([&]{
+        return std::any_of(rig.calls.motions.begin(),rig.calls.motions.end(),[](const auto& motion){return motion[0]<-100;});
+    }));
+}
 static void a_lost_remote_lets_go_of_everything_and_a_new_one_is_found() {
     Rig rig;
     auto second=std::make_shared<FakeRemote>();
@@ -268,6 +282,7 @@ int main() {
     a_nunchuk_looking_report_without_the_extension_flag_is_ignored();
     the_nunchuk_stick_flows();
     a_swing_arrives_as_motion();
+    a_wii_wave_produces_both_accelerometer_strokes();
     a_lost_remote_lets_go_of_everything_and_a_new_one_is_found();
     a_drop_between_two_updates_still_releases_what_was_held();
     a_silent_remote_is_not_connected_and_is_let_go();

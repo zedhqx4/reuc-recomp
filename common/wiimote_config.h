@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 namespace uc {
-// The "wiimote" object of config.json: whether the remote is read at all, the pointer's smoothing, how hard a push counts as a swing, the nunchuk stick's dead zone,
+// The "wiimote" object of config.json: whether the remote is read at all, pointer smoothing, the accelerometer threshold for waves/swings, the nunchuk stick's dead zone,
 // and the remote's own binding table.
 struct WiimoteSettings {
     bool enabled=true;

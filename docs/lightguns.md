@@ -34,7 +34,7 @@ This mode was written from the makers' documentation and could not be tried with
 
 ## Wii Remote
 
-The game also talks to a Wii Remote directly: the pointer from its infrared camera, the buttons, a Nunchuk, and swings and shakes.
+The game also talks to a Wii Remote directly: the pointer from its infrared camera, the buttons, a Nunchuk, and accelerometer gestures. In normal gameplay, wave/shake the remote to reload. When a timed shake/counterattack prompt is active, the same gesture performs that prompted action instead. Hold **A** and swing for the knife.
 
 **Connecting**
 - Bluetooth: in Windows, *Add a device*, hold **1** and **2** on the remote (or press the red SYNC button in the battery compartment) and choose to connect without a code. Windows shows it as an input device. The remote's light stays on while it is connected.
@@ -44,7 +44,7 @@ The game also talks to a Wii Remote directly: the pointer from its infrared came
 
 **In the game.** **Controllers** page, the **Wii Remote** button: the connected remote, a switch, pointer smoothing, how strong a swing must be, the Nunchuk stick's dead zone and every button. The on-screen prompts show the remote's buttons when it was the last device you used.
 
-**Layout by default.** Point to aim; **B** (the trigger) fires, **A** interacts, **1** reloads, **2** throws a grenade, **+** and **-** (or the D-pad left and right) change weapon, **Home** pauses; with a Nunchuk the stick moves the camera, **Z** is the knife and **C** reloads. Hold **A** and swing the remote for the knife, shake the remote for the shake prompts. In the game's menus **A** confirms and **B** goes back.
+**Layout by default.** Point to aim; **B** (the trigger) fires, **A** interacts, **1** reloads, **2** throws a grenade, **+** and **-** (or the D-pad left and right) change weapon, **Home** pauses; with a Nunchuk the stick moves the camera, **Z** is the knife and **C** reloads. Wave/shake the remote to reload during gameplay; the same wave performs the prompted counter-action during a timed shake prompt. Hold **A** and swing the remote for the knife. In the game's menus **A** confirms and **B** goes back.
 
 **Rumble:** the game's vibration runs the remote's motor while you play with the remote (the Vibration setting at 0% turns it off; the motor has no strength).
 
